@@ -13,6 +13,7 @@ let state = {
 const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
     exportBtn: document.getElementById('export-btn'),
+    themeToggle: document.getElementById('theme-toggle'),
     cacheStatus: document.getElementById('cache-status'),
     statusDot: document.querySelector('.status-dot'),
     searchInput: document.getElementById('search-input'),
@@ -38,6 +39,12 @@ const elements = {
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    
+    // Initialize Theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeUI(savedTheme);
+    
     fetchReleaseNotes();
 });
 
@@ -47,6 +54,7 @@ function setupEventListeners() {
     elements.refreshBtn.addEventListener('click', () => fetchReleaseNotes(true));
     elements.retryBtn.addEventListener('click', () => fetchReleaseNotes(true));
     elements.exportBtn.addEventListener('click', exportToCSV);
+    elements.themeToggle.addEventListener('click', toggleTheme);
 
     // Search input
     elements.searchInput.addEventListener('input', debounce((e) => {
@@ -498,4 +506,34 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+// Swap page themes
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    updateThemeUI(newTheme);
+}
+
+// Update Theme UI icons and text
+function updateThemeUI(theme) {
+    if (!elements.themeToggle) return;
+    
+    const sunIcon = elements.themeToggle.querySelector('.theme-icon-sun');
+    const moonIcon = elements.themeToggle.querySelector('.theme-icon-moon');
+    const btnText = elements.themeToggle.querySelector('span');
+    
+    if (theme === 'light') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+        btnText.textContent = 'Dark Mode';
+    } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+        btnText.textContent = 'Light Mode';
+    }
 }

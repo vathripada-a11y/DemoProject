@@ -4,6 +4,8 @@
     --bg-card: rgba(20, 26, 42, 0.65);
     --bg-card-hover: rgba(28, 36, 58, 0.85);
     --bg-glass: rgba(13, 20, 35, 0.6);
+    --bg-input: rgba(15, 23, 42, 0.6);
+    --bg-input-focus: rgba(15, 23, 42, 0.85);
     
     --border-color: rgba(255, 255, 255, 0.08);
     --border-hover: rgba(255, 255, 255, 0.18);
@@ -284,7 +286,7 @@ body {
 
 .search-box input {
     width: 100%;
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--bg-input);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     padding: 12px 16px 12px 42px;
@@ -298,7 +300,7 @@ body {
     outline: none;
     border-color: var(--accent-indigo);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    background: rgba(15, 23, 42, 0.85);
+    background: var(--bg-input-focus);
 }
 
 .sort-box {
@@ -314,7 +316,7 @@ body {
 }
 
 .sort-box select {
-    background: rgba(15, 23, 42, 0.6);
+    background: var(--bg-input);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
     padding: 12px 36px 12px 16px;
@@ -897,4 +899,141 @@ body {
     .sort-box {
         justify-content: space-between;
     }
+}
+
+/* Light Theme Variables Overrides */
+:root[data-theme="light"] {
+    --bg-dark: #f8fafc;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-hover: rgba(255, 255, 255, 1);
+    --bg-glass: rgba(255, 255, 255, 0.8);
+    --bg-input: #ffffff;
+    --bg-input-focus: #ffffff;
+    
+    --border-color: rgba(15, 23, 42, 0.08);
+    --border-hover: rgba(15, 23, 42, 0.16);
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+}
+
+/* Light Theme Background Adjustment */
+:root[data-theme="light"] .glow-bg {
+    background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.03) 0%, transparent 45%);
+}
+
+/* Light Theme Heading Accent Override */
+:root[data-theme="light"] #app-title {
+    background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 50%, #0891b2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Light Theme Search Box Placeholder & Input */
+:root[data-theme="light"] .search-box input::placeholder {
+    color: var(--text-muted);
+}
+:root[data-theme="light"] .search-box input:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Light Theme Dropdown Arrow Color Adjustment */
+:root[data-theme="light"] .sort-box select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+}
+
+/* Light Theme Badge Counters */
+:root[data-theme="light"] .badge {
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--text-secondary);
+}
+:root[data-theme="light"] .chip.active .badge {
+    background: rgba(99, 102, 241, 0.15);
+    color: #4f46e5;
+}
+:root[data-theme="light"] .chip.active {
+    background: rgba(99, 102, 241, 0.08);
+    color: #4f46e5;
+    border-color: rgba(99, 102, 241, 0.25);
+}
+
+/* Light Theme Release Notes Cards Text Color & Shadow */
+:root[data-theme="light"] .release-card {
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+:root[data-theme="light"] .release-card:hover {
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+}
+:root[data-theme="light"] .card-content {
+    color: #334155;
+}
+:root[data-theme="light"] .card-content code {
+    background: rgba(15, 23, 42, 0.04);
+    border-color: rgba(15, 23, 42, 0.06);
+    color: #4f46e5;
+}
+
+/* Light Theme Tweet Composer Modal */
+:root[data-theme="light"] .tweet-composer {
+    background-color: #ffffff;
+    border-color: rgba(15, 23, 42, 0.12);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+:root[data-theme="light"] .modal-header h2 {
+    color: #0f172a;
+}
+:root[data-theme="light"] .modal-header {
+    border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+:root[data-theme="light"] .close-btn {
+    color: #64748b;
+}
+:root[data-theme="light"] .close-btn:hover {
+    color: #0f172a;
+    background-color: rgba(15, 23, 42, 0.05);
+}
+:root[data-theme="light"] .tweet-mockup {
+    background-color: #f7f9f9;
+    border-color: rgba(15, 23, 42, 0.08);
+}
+:root[data-theme="light"] .display-name {
+    color: #0f1419;
+}
+:root[data-theme="light"] .username {
+    color: #536471;
+}
+:root[data-theme="light"] .tweet-content-editor textarea {
+    color: #0f1419;
+}
+:root[data-theme="light"] .tweet-content-editor textarea::placeholder {
+    color: #536471;
+}
+:root[data-theme="light"] .char-counter {
+    color: #536471;
+}
+:root[data-theme="light"] .tweet-footer {
+    border-top-color: rgba(15, 23, 42, 0.06);
+}
+:root[data-theme="light"] .progress-ring__circle-bg {
+    stroke: #eff3f4;
+}
+:root[data-theme="light"] .modal-footer {
+    background-color: #f8fafc;
+    border-top-color: rgba(15, 23, 42, 0.08);
+}
+:root[data-theme="light"] .btn-text:hover {
+    background-color: rgba(15, 23, 42, 0.05);
+    color: #0f172a;
+}
+:root[data-theme="light"] .btn-twitter {
+    background-color: #0f1419;
+    color: #ffffff;
+}
+:root[data-theme="light"] .btn-twitter:hover {
+    background-color: #272c30;
+}
+:root[data-theme="light"] .modal-overlay {
+    background-color: rgba(15, 23, 42, 0.4);
 }
