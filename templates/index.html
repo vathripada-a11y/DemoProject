@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes Explorer</title>
+    <meta name="description" content="Browse, search, filter, and share the latest BigQuery release notes. Stay updated with ease.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="header-logo-title">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" fill="url(#logo-grad)"/>
+                        <defs>
+                            <linearGradient id="logo-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#4facfe"/>
+                                <stop offset="1" stop-color="#00f2fe"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div>
+                    <h1 id="app-title">BigQuery Release Explorer</h1>
+                    <p class="subtitle">Stay updated with Google Cloud BigQuery developments</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="cache-status">Loading feed...</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="currentColor"/>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Controls Section -->
+        <section class="controls-panel">
+            <!-- Search & Sort Row -->
+            <div class="controls-row">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search keywords..." aria-label="Search release notes">
+                </div>
+                
+                <div class="sort-box">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Categories Row -->
+            <div class="filter-row">
+                <span class="filter-label">Filter:</span>
+                <div class="filter-chips" id="filter-chips-container">
+                    <button class="chip active" data-type="all" id="chip-all">
+                        All <span class="badge" id="count-all">0</span>
+                    </button>
+                    <button class="chip" data-type="Feature" id="chip-feature">
+                        Feature <span class="badge" id="count-feature">0</span>
+                    </button>
+                    <button class="chip" data-type="Breaking" id="chip-breaking">
+                        Breaking <span class="badge" id="count-breaking">0</span>
+                    </button>
+                    <button class="chip" data-type="Announcement" id="chip-announcement">
+                        Announcement <span class="badge" id="count-announcement">0</span>
+                    </button>
+                    <button class="chip" data-type="Change" id="chip-change">
+                        Change <span class="badge" id="count-change">0</span>
+                    </button>
+                    <button class="chip" data-type="Issue" id="chip-issue">
+                        Issue <span class="badge" id="count-issue">0</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feed Container -->
+        <main class="feed-section">
+            <!-- Loading Skeleton -->
+            <div class="loading-state" id="loading-state">
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+            </div>
+
+            <!-- Error State -->
+            <div class="error-state hidden" id="error-state">
+                <div class="error-icon">⚠️</div>
+                <h2>Failed to Load Release Notes</h2>
+                <p id="error-message">Something went wrong. Please check your network connection and try again.</p>
+                <button id="retry-btn" class="btn btn-secondary">Retry Fetch</button>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h2>No Updates Found</h2>
+                <p>Try refining your search query or toggling other filter chips.</p>
+            </div>
+
+            <!-- Release Cards -->
+            <div class="cards-grid hidden" id="cards-grid"></div>
+        </main>
+    </div>
+
+    <!-- Twitter Composer Modal -->
+    <div class="modal-overlay hidden" id="tweet-modal">
+        <div class="tweet-composer">
+            <div class="modal-header">
+                <h2>Share to Twitter / X</h2>
+                <button class="close-btn" id="close-modal-btn" aria-label="Close modal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Twitter Feed Mockup Card -->
+                <div class="tweet-mockup">
+                    <div class="tweet-author">
+                        <div class="tweet-avatar">BQ</div>
+                        <div class="tweet-author-info">
+                            <span class="display-name">BigQuery News Tracker <span class="verified-badge">✓</span></span>
+                            <span class="username">@BigQueryUpdates</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tweet-content-editor">
+                        <textarea id="tweet-textarea" rows="6" maxlength="280" placeholder="What's happening?"></textarea>
+                    </div>
+                    
+                    <div class="tweet-footer">
+                        <div class="char-counter">
+                            <span id="char-count">0</span> / 280
+                            <svg class="progress-ring" width="20" height="20">
+                                <circle class="progress-ring__circle-bg" stroke="#2f3336" stroke-width="2" fill="transparent" r="8" cx="10" cy="10"/>
+                                <circle class="progress-ring__circle" stroke="#1d9bf0" stroke-width="2" fill="transparent" r="8" cx="10" cy="10" stroke-dasharray="50.26" stroke-dashoffset="50.26"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-text" id="cancel-tweet-btn">Cancel</button>
+                <button class="btn btn-twitter" id="post-tweet-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="twitter-icon">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Tweet Web Intent</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js" defer></script>
+</body>
+</html>
