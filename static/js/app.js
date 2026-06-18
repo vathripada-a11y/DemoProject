@@ -25,6 +25,7 @@ const elements = {
     errorMessage: document.getElementById('error-message'),
     retryBtn: document.getElementById('retry-btn'),
     emptyState: document.getElementById('empty-state'),
+    clearFiltersBtn: document.getElementById('clear-filters-btn'),
     
     // Modal
     tweetModal: document.getElementById('tweet-modal'),
@@ -55,6 +56,7 @@ function setupEventListeners() {
     elements.retryBtn.addEventListener('click', () => fetchReleaseNotes(true));
     elements.exportBtn.addEventListener('click', exportToCSV);
     elements.themeToggle.addEventListener('click', toggleTheme);
+    elements.clearFiltersBtn.addEventListener('click', clearFilters);
 
     // Search input
     elements.searchInput.addEventListener('input', debounce((e) => {
@@ -88,6 +90,14 @@ function setupEventListeners() {
     elements.tweetTextarea.addEventListener('input', updateCharCount);
     elements.postTweetBtn.addEventListener('click', handleTweetSubmit);
 
+    // Submit tweet on Ctrl+Enter
+    elements.tweetTextarea.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            handleTweetSubmit();
+        }
+    });
+
     // Close modal on click outside
     elements.tweetModal.addEventListener('click', (e) => {
         if (e.target === elements.tweetModal) {
@@ -95,10 +105,23 @@ function setupEventListeners() {
         }
     });
 
-    // Close on Escape key
+    // Global Key Listener for modal close and '/' key focus shortcut
     document.addEventListener('keydown', (e) => {
+        // Handle Escape to close modal
         if (e.key === 'Escape' && !elements.tweetModal.classList.contains('hidden')) {
             closeTweetModal();
+            return;
+        }
+
+        // Handle '/' key search shortcut
+        if (e.key === '/') {
+            // Ignore if user is already typing in an input/textarea
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                return;
+            }
+            e.preventDefault();
+            elements.searchInput.focus();
+            elements.searchInput.select();
         }
     });
 }
@@ -122,12 +145,16 @@ async function fetchReleaseNotes(forceRefresh = false) {
             updateStatusText(result.cached_at);
             updateFilterCounts();
             render();
+            if (forceRefresh) {
+                showToast('Release notes updated successfully!');
+            }
         } else {
             throw new Error(result.error || 'Unknown server error');
         }
     } catch (error) {
         console.error('Error fetching release notes:', error);
         showError(error.message);
+        showToast('Failed to refresh feed', 'error');
     }
 }
 
@@ -230,7 +257,7 @@ function createCard(item) {
     // Content HTML
     const cardContent = document.createElement('div');
     cardContent.className = 'card-content';
-    cardContent.innerHTML = item.html;
+    cardContent.innerHTML = highlightText(item.html, state.filters.search);
     
     // Actions Footer
     const cardActions = document.createElement('div');
@@ -387,7 +414,10 @@ function closeTweetModal() {
 
 function updateCharCount() {
     const textLength = elements.tweetTextarea.value.length;
-    elements.charCount.textContent = textLength;
+    const remaining = 280 - textLength;
+    
+    // Show remaining negative count if limit exceeded
+    elements.charCount.textContent = remaining < 0 ? remaining : textLength;
     
     // Calculate progress circle stroke
     const circleRadius = 8;
@@ -399,7 +429,10 @@ function updateCharCount() {
     
     // Text Length Warning Colors
     const counterWrapper = document.querySelector('.char-counter');
-    if (textLength >= 280) {
+    if (textLength > 280) {
+        counterWrapper.className = 'char-counter danger';
+        elements.progressCircle.style.stroke = 'var(--type-breaking)';
+    } else if (textLength === 280) {
         counterWrapper.className = 'char-counter danger';
         elements.progressCircle.style.stroke = 'var(--type-breaking)';
     } else if (textLength >= 260) {
@@ -448,6 +481,7 @@ function handleCopyUpdate(item, btn) {
     const copyText = `BigQuery ${item.type} (${item.date}):\n${plainText}\n\nRead more: ${item.link}`;
     
     navigator.clipboard.writeText(copyText).then(() => {
+        showToast('Update copied to clipboard!');
         const span = btn.querySelector('span');
         const originalText = span.textContent;
         span.textContent = 'Copied! ✓';
@@ -459,7 +493,7 @@ function handleCopyUpdate(item, btn) {
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy to clipboard: ', err);
-        alert('Could not copy to clipboard. Please select and copy manually.');
+        showToast('Failed to copy to clipboard', 'error');
     });
 }
 
@@ -467,7 +501,7 @@ function handleCopyUpdate(item, btn) {
 function exportToCSV() {
     const filtered = getFilteredNotes();
     if (filtered.length === 0) {
-        alert("No release notes found matching your active filters to export.");
+        showToast('No filtered updates found to export', 'error');
         return;
     }
     
@@ -506,6 +540,8 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    
+    showToast('Exported filtered updates to CSV!');
 }
 
 // Swap page themes
@@ -517,6 +553,7 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
     
     updateThemeUI(newTheme);
+    showToast(`Swapped to ${newTheme === 'light' ? 'light' : 'dark'} theme`, 'info');
 }
 
 // Update Theme UI icons and text
@@ -536,4 +573,68 @@ function updateThemeUI(theme) {
         moonIcon.classList.add('hidden');
         btnText.textContent = 'Light Mode';
     }
+}
+
+// Reset all search values and filters
+function clearFilters() {
+    elements.searchInput.value = '';
+    state.filters.search = '';
+    
+    // Reset active chip
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    document.getElementById('chip-all').classList.add('active');
+    state.filters.type = 'all';
+    
+    elements.sortSelect.value = 'newest';
+    state.filters.sort = 'newest';
+    
+    render();
+    showToast('Search and filters reset');
+}
+
+// Render toast notifications
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = type === 'success' ? '✓' : 'ℹ';
+    toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+    
+    container.appendChild(toast);
+    
+    // Auto remove after animation ends
+    setTimeout(() => {
+        toast.style.animation = 'toastFadeOut 0.3s ease-out forwards';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 2500);
+}
+
+// Highlight keyword matches safely (HTML tag aware)
+function highlightText(html, query) {
+    if (!query) return html;
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+    
+    function walk(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (regex.test(node.nodeValue)) {
+                const span = document.createElement('span');
+                span.innerHTML = node.nodeValue.replace(regex, '<mark class="highlight">$1</mark>');
+                node.parentNode.replaceChild(span, node);
+            }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const children = Array.from(node.childNodes);
+            children.forEach(child => walk(child));
+        }
+    }
+    
+    Array.from(temp.childNodes).forEach(node => walk(node));
+    return temp.innerHTML;
 }
