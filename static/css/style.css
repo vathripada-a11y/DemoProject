@@ -554,21 +554,41 @@ body {
     padding-top: 14px;
     display: flex;
     justify-content: flex-end;
+    gap: 10px;
 }
 
-.btn-card-tweet {
+.btn-card-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-body);
     font-size: 0.8rem;
+    font-weight: 600;
     padding: 6px 12px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition-fast);
 }
 
-.btn-card-tweet:hover {
+.btn-card-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+}
+
+.btn-card-action.tweet:hover {
     background: rgba(29, 155, 240, 0.1);
     color: #1d9bf0;
     border-color: rgba(29, 155, 240, 0.3);
+}
+
+.btn-card-action.copy.copied {
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #10b981 !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
 }
 
 /* States styling */

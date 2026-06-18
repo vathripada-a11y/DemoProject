@@ -12,6 +12,7 @@ let state = {
 // DOM Elements
 const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
+    exportBtn: document.getElementById('export-btn'),
     cacheStatus: document.getElementById('cache-status'),
     statusDot: document.querySelector('.status-dot'),
     searchInput: document.getElementById('search-input'),
@@ -42,9 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Event Listeners
 function setupEventListeners() {
-    // Refresh buttons
+    // Refresh & Export buttons
     elements.refreshBtn.addEventListener('click', () => fetchReleaseNotes(true));
     elements.retryBtn.addEventListener('click', () => fetchReleaseNotes(true));
+    elements.exportBtn.addEventListener('click', exportToCSV);
 
     // Search input
     elements.searchInput.addEventListener('input', debounce((e) => {
@@ -121,8 +123,8 @@ async function fetchReleaseNotes(forceRefresh = false) {
     }
 }
 
-// Render release notes
-function render() {
+// Get active filtered and sorted release notes list
+function getFilteredNotes() {
     let filtered = [...state.notes];
 
     // 1. Filter by category
@@ -150,6 +152,13 @@ function render() {
         const dateB = new Date(b.updated);
         return state.filters.sort === 'newest' ? dateB - dateA : dateA - dateB;
     });
+
+    return filtered;
+}
+
+// Render release notes
+function render() {
+    const filtered = getFilteredNotes();
 
     // Render logic
     hideLoading();
@@ -219,16 +228,30 @@ function createCard(item) {
     const cardActions = document.createElement('div');
     cardActions.className = 'card-actions';
     
+    // Copy to Clipboard Button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-card-action copy';
+    copyBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px; height:13px; margin-right:4px;">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span>Copy Update</span>
+    `;
+    copyBtn.addEventListener('click', () => handleCopyUpdate(item, copyBtn));
+
+    // Tweet Button
     const tweetBtn = document.createElement('button');
-    tweetBtn.className = 'btn btn-card-tweet';
+    tweetBtn.className = 'btn-card-action tweet';
     tweetBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px; height:14px; margin-right:4px;">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:13px; height:13px; margin-right:4px;">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
         </svg>
         <span>Tweet Update</span>
     `;
     tweetBtn.addEventListener('click', () => openTweetModal(item));
     
+    cardActions.appendChild(copyBtn);
     cardActions.appendChild(tweetBtn);
     
     card.appendChild(cardHeader);
@@ -405,4 +428,74 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// Copy specific card updates to Clipboard
+function handleCopyUpdate(item, btn) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = item.html;
+    let plainText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+    plainText = plainText.replace(/\s+/g, ' '); // collapse double spaces/newlines
+    
+    const copyText = `BigQuery ${item.type} (${item.date}):\n${plainText}\n\nRead more: ${item.link}`;
+    
+    navigator.clipboard.writeText(copyText).then(() => {
+        const span = btn.querySelector('span');
+        const originalText = span.textContent;
+        span.textContent = 'Copied! ✓';
+        btn.classList.add('copied');
+        
+        setTimeout(() => {
+            span.textContent = originalText;
+            btn.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy to clipboard: ', err);
+        alert('Could not copy to clipboard. Please select and copy manually.');
+    });
+}
+
+// Export current filtered and sorted release notes to CSV
+function exportToCSV() {
+    const filtered = getFilteredNotes();
+    if (filtered.length === 0) {
+        alert("No release notes found matching your active filters to export.");
+        return;
+    }
+    
+    // CSV Headers
+    const headers = ["ID", "Date", "Updated Date", "Type", "Link", "Content"];
+    const rows = [headers.map(h => `"${h.replace(/"/g, '""')}"`).join(",")];
+    
+    // CSV Body Rows
+    filtered.forEach(item => {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = item.html;
+        const plainText = (tempDiv.textContent || tempDiv.innerText || '').trim().replace(/\s+/g, ' ');
+        
+        const row = [
+            item.id,
+            item.date,
+            item.updated,
+            item.type,
+            item.link,
+            plainText
+        ];
+        rows.push(row.map(val => `"${val.replace(/"/g, '""')}"`).join(","));
+    });
+    
+    // Trigger local download via Blob
+    const csvString = rows.join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `bigquery_release_notes_${timestamp}.csv`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
